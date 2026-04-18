@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String           @id @default(cuid())
+  name         String
+  email        String           @unique
+  password     String
+  businessName String
+  plan         Plan             @default(FREE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  balances     OpeningBalance[]
+  rates        ExchangeRate[]
+  transactions Transaction[]
+  customers    Customer[]
+  expenses     Expense[]
+  loans        Loan[]
+}
+
+enum Plan { FREE BASIC PRO }
+
+model OpeningBalance {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  aedCash   Float    @default(0)
+  aedBank   Float    @default(0)
+  tzsCash   Float    @default(0)
+  tzsBank   Float    @default(0)
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buyRate   Float
+  sellRate  Float
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String?
+  email        String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  loans        Loan[]
+}
+
+model Transaction {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  type          TxType
+  aedAmount     Float
+  tzsAmount     Float
+  rate          Float
+  profit        Float         @default(0)
+  paymentMethod PaymentMethod @default(CASH)
+  notes         String?
+  date          DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+}
+
+enum TxType { BUY SELL }
+enum PaymentMethod { CASH BANK }
+
+model Expense {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String
+  amount    Float
+  currency  String   @default("TZS")
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model Loan {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId String?
+  customer   Customer?  @relation(fields: [customerId], references: [id])
+  type       LoanType
+  personName String
+  phone      String?
+  amount     Float
+  currency   String     @default("TZS")
+  dueDate    DateTime?
+  status     LoanStatus @default(PENDING)
+  paidAmount Float      @default(0)
+  notes      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+enum LoanType { GIVEN RECEIVED }
+enum LoanStatus { PENDING PARTIAL PAID }
